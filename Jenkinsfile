@@ -4,20 +4,26 @@ pipeline {
     stages {
         stage('Clone') {
             steps {
-                // Add your build steps here
+                checkout scm
             }
         }
         
         stage('Build') {
             steps {
-                // Add your test steps here
+                sh 'echo "Building Docker image..."'
+                sh 'docker build -t sicei-${GIT_BRANCH}:1.0.0-${BUILD_NUMBER} .'
             }
         }
         
         stage('Deploy') {
             steps {
-                sh(docker build -t sicei-${GIT_BRANCH}:1.0.0-${BUILD_NUMBER} .)
-                sh(docker run -d -p 7000:8000 sicei-${GIT_BRANCH}:1.0.0-${BUILD_NUMBER})
+                sh '''
+                if docker ps -a --format '{{.Names}}' | grep -q "^sicei$"; then
+                    docker stop sicei
+                    docker rm sicei
+                fi
+                '''
+                sh 'docker run -d -p 7000:8000 sicei-${GIT_BRANCH}:1.0.0-${BUILD_NUMBER}'
             }
         }
     }
